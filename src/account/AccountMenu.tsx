@@ -55,27 +55,31 @@ export default function AccountMenu() {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      async (event: AuthChangeEvent, session: Session | null) => {
+      (event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
       setIsOpen(false);
       setLoading(false);
 
       if (event === "SIGNED_IN" && session?.user) {
-        // Fetch username from profiles table for toast + display
-        const { data: profile } = await supabase
-          .from("profiles")
-          .select("username")
-          .eq("id", session.user.id)
-          .single();
-
-        const name = profile?.username || "User";
-        setUsername(name);
-        setWelcomeMessage(`Welcome back, ${name}!`);
-
-        // Hide the toast after 4 seconds
+        // Defer the database query to release the Supabase auth lock and prevent deadlocks
         setTimeout(() => {
-          if (isMounted) setWelcomeMessage("");
-        }, 4000);
+          const fetchProfile = async () => {
+            const { data: profile } = await supabase
+              .from("profiles")
+              .select("username")
+              .eq("id", session.user.id)
+              .single();
+
+            const name = profile?.username || "User";
+            setUsername(name);
+            setWelcomeMessage(`Welcome back, ${name}!`);
+
+            setTimeout(() => {
+              if (isMounted) setWelcomeMessage("");
+            }, 4000);
+          };
+          fetchProfile();
+        }, 0);
       } else if (event === "SIGNED_OUT") {
         setUsername("User");
       }
