@@ -1,14 +1,13 @@
 import { createBrowserClient } from "@supabase/ssr";
-import type { SupabaseClient, Session } from "@supabase/supabase-js";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
 // Cache the instance with strict typing
 let supabaseInstance: SupabaseClient | null = null;
 
 // Track the active session promise to prevent concurrent lock requests
-let activeSessionPromise: Promise<{
-  data: { session: Session | null };
-  error: any;
-}> | null = null;
+// Using ReturnType ensures it perfectly matches Supabase's expected discriminated union types
+let activeSessionPromise: ReturnType<SupabaseClient["auth"]["getSession"]> | null =
+  null;
 
 export function createClient(): SupabaseClient {
   if (!supabaseInstance) {
@@ -21,7 +20,7 @@ export function createClient(): SupabaseClient {
     const originalGetSession =
       supabaseInstance.auth.getSession.bind(supabaseInstance.auth);
 
-    supabaseInstance.auth.getSession = async () => {
+    supabaseInstance.auth.getSession = () => {
       if (!activeSessionPromise) {
         activeSessionPromise = originalGetSession();
         activeSessionPromise.finally(() => {
