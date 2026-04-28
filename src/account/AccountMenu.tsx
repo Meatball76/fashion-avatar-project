@@ -52,7 +52,10 @@ export default function AccountMenu() {
 
     loadSession();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
       setIsOpen(false);
       setLoading(false);
@@ -76,7 +79,8 @@ export default function AccountMenu() {
       } else if (event === "SIGNED_OUT") {
         setUsername("User");
       }
-    });
+      },
+    );
 
     return () => {
       isMounted = false;
