@@ -78,27 +78,9 @@ export default function AccountMenu() {
       }
     });
 
-    // Auto-refresh session with a 5-second throttle to prevent Web Lock AbortErrors
-    let lastRefresh = 0;
-    const handleVisibilityChange = async () => {
-      if (document.visibilityState === "visible") {
-        const now = Date.now();
-        if (now - lastRefresh > 5000) { // 5 second cooldown
-          lastRefresh = now;
-          try {
-            await supabase.auth.refreshSession();
-          } catch (error) {
-            console.error("Failed to auto-refresh session", error);
-          }
-        }
-      }
-    };
-    window.addEventListener("visibilitychange", handleVisibilityChange);
-
     return () => {
       isMounted = false;
-      window.removeEventListener("visibilitychange", handleVisibilityChange);
-      subscription.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [supabase]);
 

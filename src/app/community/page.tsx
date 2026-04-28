@@ -61,18 +61,10 @@ export default function CommunityPage() {
       loadMyOutfits();
     };
 
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        handleUpdate();
-      }
-    };
-
     window.addEventListener("saved-outfits-updated", handleUpdate);
-    window.addEventListener("visibilitychange", handleVisibilityChange);
     
     return () => {
       window.removeEventListener("saved-outfits-updated", handleUpdate);
-      window.removeEventListener("visibilitychange", handleVisibilityChange);
     };
   }, [loadCommunityFeed]);
 

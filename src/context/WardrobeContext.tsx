@@ -259,16 +259,6 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
 
     // Fetch data immediately
     fetchWardrobeItems();
-
-    // Re-fetch data whenever the user tabs back into the app
-    const handleVisibilityChange = () => {
-      if (document.visibilityState === "visible") {
-        fetchWardrobeItems();
-      }
-    };
-
-    window.addEventListener("visibilitychange", handleVisibilityChange);
-    return () => window.removeEventListener("visibilitychange", handleVisibilityChange);
   }, [isLoaded, userId, fetchWardrobeItems]);
 
   return (
