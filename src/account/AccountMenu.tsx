@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useEffect, useMemo, useState } from "react";
 
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { createClient } from "@/src/utils/supabase/client";
 import SignOutButton from "./SignOutButton";
 
@@ -51,7 +52,7 @@ export default function AccountMenu() {
 
     loadSession();
 
-    const { data: subscription } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const { data: subscription } = supabase.auth.onAuthStateChange(async (event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
       setIsOpen(false);
       setLoading(false);
