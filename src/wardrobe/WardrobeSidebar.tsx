@@ -88,9 +88,11 @@ export default function WardrobeSidebar({
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((event, session) => {
+    } = supabase.auth.onAuthStateChange(
+      (event: AuthChangeEvent, session: Session | null) => {
       setUser(session?.user ?? null);
-    });
+      },
+    );
 
     return () => {
       subscription.unsubscribe();

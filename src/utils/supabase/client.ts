@@ -1,13 +1,14 @@
-import { createBrowserClient } from '@supabase/ssr'
+import { createBrowserClient } from "@supabase/ssr";
+import type { SupabaseClient } from "@supabase/supabase-js";
 
-// Cache the instance outside the function scope
-let supabaseInstance: any = null;
+// Cache the instance with strict typing
+let supabaseInstance: SupabaseClient | null = null;
 
-export function createClient() {
+export function createClient(): SupabaseClient {
   if (!supabaseInstance) {
     supabaseInstance = createBrowserClient(
       process.env.NEXT_PUBLIC_SUPABASE_URL!,
-      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
     );
   }
   return supabaseInstance;

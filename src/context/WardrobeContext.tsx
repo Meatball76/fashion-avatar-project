@@ -9,6 +9,7 @@ import {
   useRef,
   useState,
 } from "react";
+import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { NewWardrobeItem, WardrobeItem } from "@/src/wardrobe/types";
 import { createClient } from "@/src/utils/supabase/client";
 
@@ -48,9 +49,11 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
 
     const {
       data: { subscription },
-    } = supabase.auth.onAuthStateChange((_event, session) => {
+    } = supabase.auth.onAuthStateChange(
+      (_event: AuthChangeEvent, session: Session | null) => {
       setUserId(session?.user?.id ?? null);
-    });
+      },
+    );
 
     return () => {
       subscription.unsubscribe();
