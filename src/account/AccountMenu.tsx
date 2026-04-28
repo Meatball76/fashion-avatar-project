@@ -77,11 +77,48 @@ export default function AccountMenu() {
       }
     });
 
+    // Auto-refresh session with a 5-second throttle to prevent Web Lock AbortErrors
+    let lastRefresh = 0;
+    const handleVisibilityChange = async () => {
+      if (document.visibilityState === "visible") {
+        const now = Date.now();
+        if (now - lastRefresh > 5000) { // 5 second cooldown
+          lastRefresh = now;
+          try {
+            await supabase.auth.refreshSession();
+          } catch (error) {
+            console.error("Failed to auto-refresh session", error);
+          }
+        }
+      }
+    };
+    window.addEventListener("visibilitychange", handleVisibilityChange);
+
     return () => {
       isMounted = false;
+      window.removeEventListener("visibilitychange", handleVisibilityChange);
       subscription.subscription.unsubscribe();
     };
   }, [supabase]);
+
+  // Listen for manual profile updates from the Settings page
+  useEffect(() => {
+    const handleProfileUpdate = async () => {
+      if (!user?.id) return;
+
+      const { data: profile } = await supabase.from("profiles").select("username").eq("id", user.id).single();
+
+      if (profile?.username) {
+        setUsername(profile.username);
+      }
+    };
+
+    window.addEventListener("profile-updated", handleProfileUpdate);
+
+    return () => {
+      window.removeEventListener("profile-updated", handleProfileUpdate);
+    };
+  }, [user?.id, supabase]);
 
   if (loading) {
     return <div className="h-10 w-32 animate-pulse rounded-lg bg-slate-200" />;
