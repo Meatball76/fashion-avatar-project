@@ -12,6 +12,7 @@ import {
 import type { AuthChangeEvent, Session } from "@supabase/supabase-js";
 import { NewWardrobeItem, WardrobeItem } from "@/src/wardrobe/types";
 import { createClient } from "@/src/utils/supabase/client";
+import type { SavedOutfit } from "@/src/utils/outfits";
 
 interface WardrobeContextValue {
   items: WardrobeItem[];
@@ -20,6 +21,10 @@ interface WardrobeContextValue {
   removeItem: (id: string) => Promise<void>;
   clearGuestWardrobe: () => void;
   fetchWardrobeItems: () => Promise<void>;
+  editingOutfit: SavedOutfit | null;
+  setEditingOutfit: (outfit: SavedOutfit | null) => void;
+  customAvatarUrl: string | null;
+  setCustomAvatarUrl: (url: string | null) => void;
 }
 
 /** Legacy single bucket (migrated into guest). */
@@ -27,6 +32,20 @@ const LEGACY_STORAGE_KEY = "fashion-avatar-wardrobe-items";
 
 function guestStorageKey() {
   return "fashion-avatar-wardrobe-guest";
+}
+
+function guestCustomAvatarStorageKey() {
+  return "fashion-avatar-custom-avatar-guest";
+}
+
+function normalizeClothingType(
+  value: unknown,
+): WardrobeItem["type"] {
+  if (value === "upper" || value === "upper-wear") return "upper";
+  if (value === "lower" || value === "lower-wear") return "lower";
+  if (value === "shoes" || value === "shoe") return "shoes";
+  if (value === "accessories" || value === "accessory") return "accessories";
+  return "upper";
 }
 
 const WardrobeContext = createContext<WardrobeContextValue | undefined>(
@@ -38,6 +57,10 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
   const [isLoaded, setIsLoaded] = useState(false);
   const [userId, setUserId] = useState<string | null>(null);
   const previousUserIdRef = useRef<string | null>(null);
+  const [editingOutfit, setEditingOutfit] = useState<SavedOutfit | null>(null);
+  const [customAvatarUrl, setCustomAvatarUrl] = useState<string | null>(null);
+  const [isCustomAvatarLoaded, setIsCustomAvatarLoaded] = useState(false);
+  const lastSavedCustomAvatarRef = useRef<string | null>(null);
 
   useEffect(() => {
     const supabase = createClient();
@@ -50,8 +73,11 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(
-      (_event: AuthChangeEvent, session: Session | null) => {
-      setUserId(session?.user?.id ?? null);
+      (event: AuthChangeEvent, session: Session | null) => {
+        if (event === "SIGNED_OUT") {
+          setItems([]); // Clear items instantly so they don't leak into guest storage
+        }
+        setUserId(session?.user?.id ?? null);
       },
     );
 
@@ -70,6 +96,49 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
       }
     }
   }, [items, isLoaded, userId]);
+
+  useEffect(() => {
+    if (!isLoaded) return;
+    if (!isCustomAvatarLoaded) return;
+
+    if (userId === null) {
+      try {
+        if (customAvatarUrl) {
+          window.localStorage.setItem(
+            guestCustomAvatarStorageKey(),
+            JSON.stringify({ url: customAvatarUrl }),
+          );
+        } else {
+          window.localStorage.removeItem(guestCustomAvatarStorageKey());
+        }
+      } catch (error) {
+        console.error("Unable to save custom avatar to localStorage", error);
+      }
+      return;
+    }
+
+    // Optional: best-effort sync to Supabase profiles for logged-in users.
+    // This is intentionally non-blocking and safe if the column doesn't exist.
+    if (lastSavedCustomAvatarRef.current === customAvatarUrl) return;
+    lastSavedCustomAvatarRef.current = customAvatarUrl;
+
+    const supabase = createClient();
+    void (async () => {
+      try {
+        const { error } = await supabase
+          .from("profiles")
+          .update({ custom_avatar_url: customAvatarUrl })
+          .eq("id", userId);
+        if (error) throw error;
+      } catch (error) {
+        // Don't break the app if the column/table isn't present yet.
+        console.warn(
+          "Unable to persist custom avatar to Supabase profiles:",
+          error,
+        );
+      }
+    })();
+  }, [customAvatarUrl, isCustomAvatarLoaded, isLoaded, userId]);
 
   const addItem = async (item: NewWardrobeItem) => {
     const tempId = crypto.randomUUID();
@@ -137,7 +206,8 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
         );
       } catch (error) {
         console.error("Cloud upload failed:", error);
-        setItems((current) => current.filter((i) => i.id !== tempId));
+        // Keep the optimistic local item so new categories remain usable
+        // even when a backend schema is still catching up.
       }
     }
   };
@@ -196,8 +266,10 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
       });
       return [];
     });
+    setCustomAvatarUrl(null);
     try {
       window.localStorage.removeItem(guestStorageKey());
+      window.localStorage.removeItem(guestCustomAvatarStorageKey());
       window.localStorage.removeItem(LEGACY_STORAGE_KEY);
     } catch (error) {
       console.error("Unable to clear guest wardrobe from localStorage", error);
@@ -222,11 +294,26 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
         const cloudItems: WardrobeItem[] = (data ?? []).map((row) => ({
           id: row.id as string,
           url: row.image_url as string,
-          type: row.clothing_type as "upper" | "lower",
+          type: normalizeClothingType(row.clothing_type),
           isOwned: row.is_owned as boolean,
           createdAt: row.created_at as string,
         }));
         setItems(cloudItems);
+
+        // Optional: load custom avatar from Supabase profile (best-effort).
+        try {
+          const { data: profile } = await supabase
+            .from("profiles")
+            .select("custom_avatar_url")
+            .eq("id", session.user.id)
+            .single();
+
+          setCustomAvatarUrl((profile as any)?.custom_avatar_url ?? null);
+        } catch {
+          setCustomAvatarUrl(null);
+        } finally {
+          setIsCustomAvatarLoaded(true);
+        }
       } else {
         let raw = window.localStorage.getItem(guestStorageKey());
         if (!raw) {
@@ -238,10 +325,26 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
           }
         }
         setItems(raw ? JSON.parse(raw) : []);
+
+        let avatarRaw = window.localStorage.getItem(guestCustomAvatarStorageKey());
+        try {
+          if (avatarRaw) {
+            const parsed = JSON.parse(avatarRaw) as { url?: string };
+            setCustomAvatarUrl(parsed?.url ?? null);
+          } else {
+            setCustomAvatarUrl(null);
+          }
+        } catch {
+          setCustomAvatarUrl(null);
+        } finally {
+          setIsCustomAvatarLoaded(true);
+        }
       }
     } catch (error) {
       console.error("Unable to load wardrobe items", error);
       setItems([]);
+      setCustomAvatarUrl(null);
+      setIsCustomAvatarLoaded(true);
     }
   }, []);
 
@@ -252,6 +355,7 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
     if (previousUserIdRef.current === null && userId !== null) {
       try {
         window.localStorage.removeItem(guestStorageKey());
+        window.localStorage.removeItem(guestCustomAvatarStorageKey());
         window.localStorage.removeItem(LEGACY_STORAGE_KEY);
       } catch (e) {}
     }
@@ -270,6 +374,10 @@ export function WardrobeProvider({ children }: { children: ReactNode }) {
         removeItem,
         clearGuestWardrobe,
         fetchWardrobeItems,
+        editingOutfit,
+        setEditingOutfit,
+        customAvatarUrl,
+        setCustomAvatarUrl,
       }}
     >
       {children}

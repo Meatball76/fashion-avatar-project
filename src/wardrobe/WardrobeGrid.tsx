@@ -12,43 +12,49 @@ export default function WardrobeGrid({
   items,
   onRemove,
 }: WardrobeGridProps) {
+  const getLabel = (type: WardrobeItem["type"]) => {
+    if (type === "upper") return "Upper-wear";
+    if (type === "lower") return "Lower-wear";
+    if (type === "shoes") return "Shoes";
+    return "Accessories";
+  };
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
       {items.map((item, index) => (
         <article
           key={item.id}
-          className="overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm"
+          className="overflow-hidden rounded-2xl border border-border-theme bg-surface shadow-sm"
         >
-          <div className="relative aspect-square bg-slate-50">
+          {/* Add 'group' here so the hover effect targets the button */}
+          <div className="group relative aspect-square bg-surface-alt">
             <Image
               src={item.url}
               alt={`Wardrobe item ${index + 1}`}
               fill
               unoptimized
               sizes="(max-width: 1024px) 50vw, 33vw"
-              className="object-contain p-3"
+              className="object-contain p-3 transition-transform duration-300 group-hover:scale-105"
             />
+
+            {/* Sleek 'X' button that appears on hover */}
             <button
               type="button"
               onClick={() => onRemove(item.id)}
-              className="absolute right-3 top-3 rounded-full bg-white px-2.5 py-1 text-sm font-medium text-slate-500 shadow-sm hover:text-red-500"
+              className="absolute right-2 top-2 z-10 flex h-8 w-8 items-center justify-center rounded-full bg-surface/90 text-lg text-foreground/50 opacity-0 shadow-sm backdrop-blur-sm transition-all group-hover:opacity-100 hover:bg-red-50 hover:text-red-500"
+              title="Remove item"
             >
-              Remove
+              ✕
             </button>
           </div>
 
-          <div className="flex items-center justify-between gap-3 p-4">
-            <div>
-              <p className="text-sm font-semibold text-slate-900">
-                {item.type === "upper" ? "Upper-wear" : "Lower-wear"}
-              </p>
-              <p className="text-sm text-slate-600">
-                {item.isOwned ? "Owned" : "Wishlist"}
-              </p>
-            </div>
-            <span className="rounded-full bg-slate-100 px-3 py-1 text-xs font-medium text-slate-600">
-              {item.isOwned ? "Ready" : "Saved"}
-            </span>
+          <div className="p-4">
+            <p className="text-sm font-semibold text-foreground">
+              {getLabel(item.type)}
+            </p>
+            <p className="mt-0.5 text-xs text-foreground/70">
+              {item.isOwned ? "Owned" : "Wishlist"}
+            </p>
           </div>
         </article>
       ))}
