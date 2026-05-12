@@ -54,7 +54,7 @@ function toSavedOutfit(row: any, currentUserId?: string): SavedOutfit {
     lowerWearImage: getWardrobeItemImage(lowerWear),
     shoesImage: getWardrobeItemImage(shoes),
     accessoryImages: accessories
-      .map((item) => getWardrobeItemImage(item))
+      .map((item: WardrobeItem) => getWardrobeItemImage(item))
       .filter((image): image is string => Boolean(image)),
     createdAt: row.created_at,
     isFavorite: false,
