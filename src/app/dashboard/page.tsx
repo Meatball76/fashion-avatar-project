@@ -95,9 +95,10 @@ export default function DashboardPage() {
   };
 
   const handleGenerateAiTryOn = async () => {
-    if (!upperWear && !lowerWear) {
+    const hasAccessory = accessories.length > 0;
+    if (!upperWear && !lowerWear && !shoes && !hasAccessory) {
       setSaveMessage(
-        "Equip at least one clothing item (upper or lower) before generating.",
+        "Equip at least one clothing item (upper, lower, shoes, or accessories) before generating.",
       );
       return;
     }
@@ -111,6 +112,8 @@ export default function DashboardPage() {
         upperWearUrl: upperWear?.url || null,
         lowerWearUrl: lowerWear?.url || null,
         customAvatarUrl: customAvatarUrl || null,
+        shoesUrl: shoes?.url || null,
+        accessoriesUrls: accessories.map((a) => a.url),
       };
 
       const result = await generateAvatar(payload, betaSettings);
