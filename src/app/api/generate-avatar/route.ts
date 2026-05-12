@@ -115,7 +115,7 @@ export async function POST(request: Request) {
 
     if (hasShoes) {
       geminiParts.push({
-        text: "Reference Image 4 (Shoes): Describe these exact shoes.",
+        text: "Reference Image 4 (Shoes): Describe these exact shoes in high detail. You MUST state their exact primary and secondary colors, their material, and their specific style.",
       });
       geminiParts.push(await urlToGenerativePart(shoesUrl));
     }
@@ -125,7 +125,7 @@ export async function POST(request: Request) {
       for (const accessoryUrl of accessoriesUrls) {
         if (!isNonEmptyString(accessoryUrl)) continue;
         geminiParts.push({
-          text: `Reference Image ${accessoryImageNum} (Accessory): Describe this exact accessory.`,
+          text: `Reference Image ${accessoryImageNum} (Accessory): Describe this exact accessory in high detail. You MUST state exactly what type of accessory it is (e.g., watch, cap, necklace, earrings), its exact colors, and its material.`,
         });
         geminiParts.push(await urlToGenerativePart(accessoryUrl));
         accessoryImageNum += 1;

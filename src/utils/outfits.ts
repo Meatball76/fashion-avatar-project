@@ -84,20 +84,7 @@ export async function getSavedOutfits(): Promise<SavedOutfit[]> {
     return [];
   }
 
-  return data.map((row) =>
-    toSavedOutfit(
-      {
-        id: row.id,
-        user_id: row.user_id,
-        name: row.name,
-        upper_wear: row.upper_wear as WardrobeItem | null,
-        lower_wear: row.lower_wear as WardrobeItem | null,
-        created_at: row.created_at,
-        is_published: row.is_published,
-      },
-      session.user.id,
-    ),
-  );
+  return data.map((row) => toSavedOutfit(row, session.user.id));
 }
 
 export async function saveOutfitToCloud({
