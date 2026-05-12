@@ -23,8 +23,6 @@ export class BetaAvatarGenerationError extends Error {
   }
 }
 
-type ImagePayload = unknown;
-
 export type GenerateAvatarImagePayload = {
   upperWearUrl: string | null;
   lowerWearUrl: string | null;
