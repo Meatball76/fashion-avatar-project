@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, Suspense } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useTheme } from "next-themes";
 import { createClient } from "@/src/utils/supabase/client";
@@ -10,7 +10,7 @@ import type { User } from "@supabase/supabase-js";
 
 type SettingsTab = "account" | "privacy" | "appearance" | "notifications" | "preferences" | "beta";
 
-export default function SettingsPage() {
+function SettingsContent() {
   const supabase = useMemo(() => createClient(), []);
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -855,6 +855,18 @@ export default function SettingsPage() {
         </section>
       </div>
     </main>
+  );
+}
+
+export default function SettingsPage() {
+  return (
+    <Suspense
+      fallback={
+        <main className="mx-auto max-w-5xl px-6 py-10">Loading settings...</main>
+      }
+    >
+      <SettingsContent />
+    </Suspense>
   );
 }
 
