@@ -73,11 +73,11 @@ export default function AvatarCanvas({
 
   return (
     <div
-      className="flex min-h-[calc(100dvh-5rem)] w-full items-center justify-center p-2 sm:p-4"
+      className="flex h-auto min-h-full lg:h-full w-full items-center justify-center p-2 sm:p-4 lg:pb-8"
       onDragOver={(e) => e.preventDefault()}
       onDrop={handleGlobalDrop}
     >
-      <div className="flex w-full max-w-5xl flex-col lg:flex-row gap-4 lg:gap-6 items-center lg:items-start rounded-3xl border-4 border-slate-800 bg-white p-4 sm:p-6 shadow-xl dark:bg-surface">
+      <div className="flex h-auto lg:h-[85vh] lg:max-h-[850px] w-full max-w-5xl flex-col lg:flex-row gap-4 lg:gap-6 items-center lg:items-start rounded-3xl border-4 border-slate-800 bg-white p-4 sm:p-6 shadow-xl dark:bg-surface">
         <div className="w-full max-w-[340px] h-[400px] sm:h-[500px] lg:h-[640px] shrink-0 rounded-2xl overflow-hidden relative bg-white border border-border-theme dark:bg-surface-alt">
           {customAvatarUrl ? (
             <Image
