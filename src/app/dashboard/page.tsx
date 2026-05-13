@@ -172,6 +172,10 @@ export default function DashboardPage() {
             setAccessories(nextAccessories);
           }}
           newlySavedOutfit={newlySavedOutfit}
+          onUpperWearChange={setUpperWear}
+          onLowerWearChange={setLowerWear}
+          onShoesChange={setShoes}
+          onAccessoriesChange={setAccessories}
         />
       </aside>
 
