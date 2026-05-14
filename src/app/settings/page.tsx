@@ -13,8 +13,11 @@ import PrivacyTab from "@/src/settings/components/PrivacyTab";
 import PreferencesTab from "@/src/settings/components/PreferencesTab";
 import AppearanceTab from "@/src/settings/components/AppearanceTab";
 import BetaTab from "@/src/settings/components/BetaTab";
+import type { DefaultWardrobeViewPreference } from "@/src/settings/components/PreferencesTab";
 
-type SettingsTab = "account" | "privacy" | "appearance" | "notifications" | "preferences" | "beta";
+const DEFAULT_WARDROBE_VIEW_STORAGE_KEY = "fashion-avatar-default-view";
+
+type SettingsTab = "account" | "privacy" | "appearance" | "preferences" | "beta";
 
 function SettingsContent() {
   const supabase = useMemo(() => createClient(), []);
@@ -52,8 +55,9 @@ function SettingsContent() {
 
   const [isPublicProfile, setIsPublicProfile] = useState(true);
 
-  const [measurementSystem, setMeasurementSystem] = useState<"imperial" | "metric">("imperial");
-  const [defaultWardrobeView, setDefaultWardrobeView] = useState<"owned" | "unowned" | "outfits">("owned");
+  const [defaultWardrobeView, setDefaultWardrobeView] =
+    useState<DefaultWardrobeViewPreference>("clothes");
+  const [defaultViewPreferenceHydrated, setDefaultViewPreferenceHydrated] = useState(false);
   const [askBeforeCamera, setAskBeforeCamera] = useState(true);
   const { theme, setTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
@@ -68,7 +72,7 @@ function SettingsContent() {
   useEffect(() => {
     const tabParam = searchParams.get("tab");
 
-    const validTabs = ["account", "privacy", "appearance", "notifications", "preferences", "beta"];
+    const validTabs = ["account", "privacy", "appearance", "preferences", "beta"];
     if (tabParam && validTabs.includes(tabParam)) {
       setActiveTab(tabParam as SettingsTab);
     }
@@ -77,6 +81,30 @@ function SettingsContent() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useEffect(() => {
+    try {
+      const raw = window.localStorage.getItem(DEFAULT_WARDROBE_VIEW_STORAGE_KEY);
+      if (raw === "outfits") {
+        setDefaultWardrobeView("outfits");
+      } else {
+        setDefaultWardrobeView("clothes");
+      }
+    } catch {
+      setDefaultWardrobeView("clothes");
+    } finally {
+      setDefaultViewPreferenceHydrated(true);
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!defaultViewPreferenceHydrated) return;
+    try {
+      window.localStorage.setItem(DEFAULT_WARDROBE_VIEW_STORAGE_KEY, defaultWardrobeView);
+    } catch {
+      // Ignore storage quota / blocked storage errors
+    }
+  }, [defaultWardrobeView, defaultViewPreferenceHydrated]);
 
   useEffect(() => {
     if (!mounted) return;
@@ -303,7 +331,6 @@ function SettingsContent() {
     { id: "account", label: "Account", icon: "👤" },
     { id: "privacy", label: "Privacy & Safety", icon: "🛡️" },
     { id: "appearance", label: "Appearance", icon: "✨" },
-    { id: "notifications", label: "Notifications", icon: "🔔" },
     { id: "preferences", label: "Preferences", icon: "⚙️" },
     { id: "beta", label: "Beta", icon: "🧪" },
   ];
@@ -387,8 +414,6 @@ function SettingsContent() {
 
           {activeTab === "preferences" && (
             <PreferencesTab
-              measurementSystem={measurementSystem}
-              setMeasurementSystem={setMeasurementSystem}
               defaultWardrobeView={defaultWardrobeView}
               setDefaultWardrobeView={setDefaultWardrobeView}
               askBeforeCamera={askBeforeCamera}
@@ -408,14 +433,6 @@ function SettingsContent() {
               setBetaFastAiGeneration={setBetaFastAiGeneration}
               setCustomAvatarUrl={setCustomAvatarUrl}
             />
-          )}
-
-          {activeTab === "notifications" && (
-            <div className="rounded-2xl border border-dashed border-border-theme bg-surface p-12 text-center animate-in fade-in slide-in-from-bottom-4 duration-500">
-              <span className="text-4xl mb-4 block">{tabs.find((t) => t.id === activeTab)?.icon}</span>
-              <h2 className="text-xl font-semibold text-foreground capitalize">{activeTab} Settings</h2>
-              <p className="mt-2 text-foreground/70">This section is currently under construction.</p>
-            </div>
           )}
         </section>
       </div>
